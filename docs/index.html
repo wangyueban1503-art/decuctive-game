@@ -1,0 +1,2663 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>匹配推理玩法 · 互动介绍</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;700&display=swap" rel="stylesheet">
+	<style>
+		:root {
+			color-scheme: light dark;
+			--bg-primary: #0f172a;
+			--bg-secondary: #111f3a;
+			--bg-card: rgba(17, 34, 64, 0.75);
+			--accent: #5eead4;
+			--accent-strong: #38bdf8;
+			--text-primary: #f8fafc;
+			--text-muted: #94a3b8;
+			--card-border: rgba(94, 234, 212, 0.35);
+			--shadow-soft: 0 20px 45px rgba(15, 23, 42, 0.4);
+			--transition-fast: 180ms ease;
+		}
+
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+		}
+
+		body {
+			font-family: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+			background: radial-gradient(circle at top, rgba(56, 189, 248, 0.15), transparent 45%),
+				radial-gradient(circle at 20% 80%, rgba(94, 234, 212, 0.15), transparent 40%),
+				var(--bg-primary);
+			color: var(--text-primary);
+			min-height: 100vh;
+			overflow-x: hidden;
+		}
+
+		a {
+			color: inherit;
+			text-decoration: none;
+		}
+
+		nav {
+			position: sticky;
+			top: 0;
+			z-index: 100;
+			backdrop-filter: blur(16px);
+			background: rgba(10, 17, 34, 0.82);
+			border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+		}
+
+		.navbar {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 1rem clamp(1.2rem, 4vw, 3rem);
+		}
+
+		.brand {
+			display: flex;
+			align-items: center;
+			gap: 0.8rem;
+			font-size: 1rem;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+			color: var(--accent);
+		}
+
+		.brand::before {
+			content: '';
+			width: 14px;
+			height: 14px;
+			border-radius: 6px;
+			background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+			box-shadow: 0 0 20px rgba(94, 234, 212, 0.45);
+		}
+
+		.nav-links {
+			display: flex;
+			align-items: center;
+			gap: 1.2rem;
+			font-size: 0.95rem;
+		}
+
+		.nav-links .placeholder {
+			color: var(--text-muted);
+			font-size: 0.9rem;
+		}
+
+		.nav-links a {
+			position: relative;
+			padding-bottom: 0.2rem;
+		}
+
+		.nav-links a::after {
+			content: '';
+			position: absolute;
+			left: 0;
+			bottom: -0.2rem;
+			height: 2px;
+			width: 0;
+			background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+			transition: width var(--transition-fast);
+		}
+
+		.nav-links a:hover::after,
+		.nav-links a:focus-visible::after {
+			width: 100%;
+		}
+
+		.layout {
+			display: grid;
+			grid-template-columns: 280px 1fr;
+			gap: 2rem;
+			padding: clamp(1.5rem, 3vw, 2.5rem) clamp(1.2rem, 4vw, 3rem) 4rem;
+		}
+
+		aside {
+			position: sticky;
+			top: calc(72px + 1.5rem);
+			align-self: start;
+			background: rgba(10, 17, 34, 0.65);
+			border: 1px solid rgba(148, 163, 184, 0.18);
+			border-radius: 18px;
+			padding: 1.2rem 1.4rem 1.6rem;
+			box-shadow: var(--shadow-soft);
+			transition: transform var(--transition-fast), opacity var(--transition-fast);
+		}
+
+		aside.collapsed {
+			transform: translateX(-10px) translateY(10px);
+			opacity: 0.1;
+		}
+
+		.task-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			margin-bottom: 1rem;
+		}
+
+		.task-header h2 {
+			font-size: 1.05rem;
+			font-weight: 600;
+			letter-spacing: 0.04em;
+		}
+
+		.toggle-panel {
+			border: 1px solid rgba(94, 234, 212, 0.4);
+			background: transparent;
+			color: var(--accent);
+			border-radius: 999px;
+			padding: 0.2rem 0.9rem;
+			font-size: 0.8rem;
+			letter-spacing: 0.05em;
+			cursor: pointer;
+			transition: background var(--transition-fast);
+		}
+
+		.toggle-panel:hover,
+		.toggle-panel:focus-visible {
+			background: rgba(94, 234, 212, 0.12);
+		}
+
+		.task-list {
+			list-style: none;
+			display: grid;
+			gap: 0.7rem;
+		}
+
+		.task-item {
+			display: flex;
+			align-items: flex-start;
+			gap: 0.7rem;
+			font-size: 0.9rem;
+			color: var(--text-muted);
+			border-left: 3px solid rgba(148, 163, 184, 0.25);
+			padding-left: 0.8rem;
+		}
+
+		.task-item strong {
+			color: var(--text-primary);
+			font-weight: 600;
+		}
+
+		.task-item::before {
+			content: '';
+			width: 10px;
+			height: 10px;
+			margin-top: 0.25rem;
+			border-radius: 50%;
+			border: 2px solid rgba(148, 163, 184, 0.35);
+			flex-shrink: 0;
+			transition: background var(--transition-fast), border var(--transition-fast), box-shadow var(--transition-fast);
+		}
+
+		.task-complete {
+			color: var(--text-primary);
+			border-left-color: var(--accent);
+		}
+
+		.task-complete::before {
+			background: var(--accent);
+			border-color: var(--accent);
+			box-shadow: 0 0 12px rgba(94, 234, 212, 0.6);
+		}
+
+		main {
+			display: flex;
+			flex-direction: column;
+			gap: clamp(2.4rem, 6vw, 4rem);
+		}
+
+		section {
+			background: rgba(10, 17, 34, 0.55);
+			border: 1px solid rgba(148, 163, 184, 0.14);
+			border-radius: 24px;
+			padding: clamp(1.8rem, 3vw, 3rem);
+			box-shadow: var(--shadow-soft);
+		}
+
+		#hero {
+			display: grid;
+			gap: 1.8rem;
+		}
+
+		#hero h1 {
+			font-size: clamp(2.4rem, 4vw, 3.2rem);
+			font-weight: 700;
+			letter-spacing: -0.02em;
+		}
+
+		#hero p {
+			font-size: 1.05rem;
+			line-height: 1.8;
+			color: var(--text-muted);
+			max-width: 60ch;
+		}
+
+		.hero-highlight {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 1rem;
+		}
+
+		.hero-highlight span {
+			padding: 0.35rem 0.85rem;
+			border-radius: 999px;
+			border: 1px solid rgba(94, 234, 212, 0.38);
+			font-size: 0.85rem;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+		}
+
+		.RepresentedGames {
+			display: grid;
+			gap: 1.6rem;
+		}
+
+		.RepresentedGames-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			flex-wrap: wrap;
+			gap: 1rem;
+		}
+
+		.RepresentedGames-header h2 {
+			font-size: 1.6rem;
+			font-weight: 600;
+		}
+
+		.RepresentedGames-header p {
+			color: var(--text-muted);
+			font-size: 0.95rem;
+			max-width: 50ch;
+		}
+
+		.card-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+			gap: clamp(1.2rem, 3vw, 1.8rem);
+		}
+
+		.game-card {
+			display: grid;
+			gap: 1.1rem;
+			border-radius: 20px;
+			background: var(--bg-card);
+			border: 1px solid rgba(148, 163, 184, 0.16);
+			overflow: hidden;
+			transform: translateY(30px);
+			opacity: 0;
+			transition: transform 360ms ease, opacity 360ms ease;
+		}
+
+		.game-card.visible {
+			transform: translateY(0);
+			opacity: 1;
+		}
+
+		.card-visual {
+			position: relative;
+			aspect-ratio: 4 / 5;
+			background-size: cover;
+			background-position: center;
+			display: flex;
+			align-items: flex-end;
+			justify-content: flex-start;
+		}
+
+		.card-visual::after {
+			content: none;
+		}
+
+		.drop-zone {
+			min-height: 82px;
+			border: 2px dashed rgba(94, 234, 212, 0.4);
+			border-radius: 16px;
+			display: grid;
+			align-items: center;
+			justify-items: center;
+			padding: 1.1rem;
+			text-align: center;
+			font-size: 0.95rem;
+			color: var(--text-muted);
+			background: rgba(15, 23, 42, 0.45);
+			transition: border var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+		}
+
+		.drop-zone.active {
+			border-color: var(--accent-strong);
+			background: rgba(56, 189, 248, 0.12);
+			color: var(--accent);
+		}
+
+		.drop-zone.matched {
+			border-color: var(--accent);
+			background: rgba(14, 116, 144, 0.45);
+			color: var(--text-primary);
+			box-shadow: 0 0 18px rgba(94, 234, 212, 0.35);
+		}
+
+		.drag-pool {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 1rem;
+			padding-top: 0.5rem;
+		}
+
+		.draggable {
+			padding: 0.55rem 0.9rem;
+			border-radius: 999px;
+			border: 1px solid rgba(148, 163, 184, 0.24);
+			cursor: grab;
+			font-size: 0.92rem;
+			background: rgba(15, 23, 42, 0.6);
+			transition: transform var(--transition-fast), border var(--transition-fast), color var(--transition-fast);
+		}
+
+		.draggable:active {
+			cursor: grabbing;
+		}
+
+		.draggable:hover,
+		.draggable:focus-visible {
+			border-color: var(--accent);
+			color: var(--accent);
+			transform: translateY(-2px);
+		}
+
+		.draggable.used {
+			opacity: 0.3;
+			cursor: not-allowed;
+			pointer-events: none;
+		}
+
+		.levels {
+			display: grid;
+			gap: clamp(1.6rem, 4vw, 2.4rem);
+		}
+
+		.level {
+			border: 1px solid rgba(148, 163, 184, 0.18);
+			background: rgba(10, 17, 34, 0.72);
+			border-radius: 22px;
+			padding: clamp(1.6rem, 3vw, 2.6rem);
+			display: grid;
+			gap: 1rem;
+		}
+
+		.fragment-panel {
+			margin-top: 1.4rem;
+			padding-top: 1.1rem;
+			border-top: 1px solid rgba(148, 163, 184, 0.12);
+			display: grid;
+			gap: 0.75rem;
+		}
+
+		.carousel-shell {
+			position: relative;
+			overflow: hidden;
+			border-radius: 18px;
+			border: 1px solid rgba(148, 163, 184, 0.18);
+			background: rgba(15, 23, 42, 0.6);
+			box-shadow: 0 18px 32px rgba(15, 23, 42, 0.45);
+		}
+
+		.carousel-track {
+			display: flex;
+			transition: transform 420ms ease;
+		}
+
+		.carousel-slide {
+			min-width: 100%;
+			position: relative;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding: 1.2rem;
+		}
+
+		.carousel-slide img {
+			max-width: min(95%, 620px);
+			max-height: 380px;
+			width: auto;
+			height: auto;
+			object-fit: contain;
+			display: block;
+			border-radius: 12px;
+			box-shadow: 0 10px 28px rgba(15, 23, 42, 0.35);
+		}
+
+		.carousel-control {
+			position: absolute;
+			top: 50%;
+			transform: translateY(-50%);
+			border: none;
+			background: rgba(15, 23, 42, 0.65);
+			color: var(--text-primary);
+			width: 42px;
+			height: 42px;
+			display: grid;
+			place-items: center;
+			border-radius: 50%;
+			cursor: pointer;
+			transition: background var(--transition-fast), transform var(--transition-fast);
+			z-index: 2;
+		}
+
+		.carousel-control:hover,
+		.carousel-control:focus-visible {
+			background: rgba(56, 189, 248, 0.32);
+			transform: translateY(-50%) scale(1.05);
+			outline: none;
+		}
+
+		.carousel-control.prev {
+			left: 12px;
+		}
+
+		.carousel-control.next {
+			right: 12px;
+		}
+
+		.carousel-indicators {
+			position: absolute;
+			bottom: 12px;
+			left: 50%;
+			transform: translateX(-50%);
+			display: flex;
+			gap: 10px;
+		}
+
+		.carousel-indicators button {
+			width: 10px;
+			height: 10px;
+			border-radius: 50%;
+			border: none;
+			background: rgba(148, 163, 184, 0.4);
+			cursor: pointer;
+			transition: background var(--transition-fast), transform var(--transition-fast);
+		}
+
+		.carousel-indicators button.active {
+			background: var(--accent);
+			transform: scale(1.25);
+		}
+
+		.puzzle-zone {
+			display: grid;
+			gap: 1.1rem;
+			margin-top: 1.6rem;
+			background: rgba(15, 23, 42, 0.55);
+			border: 1px solid rgba(148, 163, 184, 0.16);
+			border-radius: 18px;
+			padding: clamp(1.2rem, 3vw, 1.6rem);
+		}
+
+		.puzzle-zone h4 {
+			font-size: 1.1rem;
+			font-weight: 600;
+		}
+
+		.puzzle-list {
+			display: grid;
+			gap: 1rem;
+		}
+
+		.puzzle-item {
+			display: grid;
+			gap: 0.65rem;
+			padding: 1rem 1.1rem;
+			border-radius: 14px;
+			background: rgba(17, 34, 64, 0.6);
+			border: 1px solid rgba(148, 163, 184, 0.18);
+		}
+
+		.puzzle-item.example {
+			border-style: dashed;
+		}
+
+		.icon-group {
+			display: flex;
+			gap: 0.7rem;
+			flex-wrap: wrap;
+		}
+
+		.icon-badge {
+			width: 48px;
+			height: 48px;
+			border-radius: 12px;
+			overflow: hidden;
+			border: 1px solid rgba(148, 163, 184, 0.2);
+			background: rgba(15, 23, 42, 0.72);
+			display: grid;
+			place-items: center;
+		}
+
+		.icon-badge img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+
+		.puzzle-input {
+			padding: 0.55rem 0.8rem;
+			border-radius: 10px;
+			border: 1px solid rgba(148, 163, 184, 0.28);
+			background: rgba(15, 23, 42, 0.5);
+			color: var(--text-primary);
+			font-size: 0.95rem;
+			transition: border var(--transition-fast), box-shadow var(--transition-fast);
+		}
+
+		.puzzle-input:focus-visible {
+			outline: none;
+			border-color: var(--accent);
+			box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+		}
+
+		.puzzle-note {
+			font-size: 0.85rem;
+			color: var(--text-muted);
+		}
+
+		.puzzle-submit {
+			justify-self: start;
+			padding: 0.45rem 1.4rem;
+			border-radius: 999px;
+			border: 1px solid rgba(56, 189, 248, 0.45);
+			background: linear-gradient(135deg, rgba(37, 99, 235, 0.45), rgba(56, 189, 248, 0.55));
+			color: var(--text-primary);
+			letter-spacing: 0.06em;
+			cursor: pointer;
+			transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+		}
+
+		.puzzle-submit:hover,
+		.puzzle-submit:focus-visible {
+			transform: translateY(-1px);
+			box-shadow: 0 12px 26px rgba(56, 189, 248, 0.25);
+			outline: none;
+		}
+
+		.puzzle-feedback {
+			min-height: 1.4rem;
+			font-size: 0.9rem;
+		}
+
+		.puzzle-feedback.success {
+			color: var(--accent);
+		}
+
+		.puzzle-feedback.error {
+			color: #fca5a5;
+		}
+
+		.typehelp-terminal {
+			display: grid;
+			gap: 1.3rem;
+			background: rgba(15, 23, 42, 0.6);
+			border: 1px solid rgba(148, 163, 184, 0.16);
+			border-radius: 18px;
+			padding: clamp(1.2rem, 3vw, 1.6rem);
+		}
+
+		.typehelp-input {
+			display: grid;
+			gap: 0.6rem;
+		}
+
+		.typehelp-input label {
+			font-size: 0.9rem;
+			color: var(--text-muted);
+		}
+
+		.typehelp-field {
+			display: flex;
+			gap: 0.75rem;
+		}
+
+		.typehelp-field input {
+			flex: 1;
+			padding: 0.55rem 0.8rem;
+			border-radius: 10px;
+			border: 1px solid rgba(148, 163, 184, 0.26);
+			background: rgba(10, 17, 34, 0.65);
+			color: var(--text-primary);
+			font-size: 0.95rem;
+			transition: border var(--transition-fast), box-shadow var(--transition-fast);
+		}
+
+		.typehelp-field input:focus-visible {
+			outline: none;
+			border-color: var(--accent);
+			box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+		}
+
+		.typehelp-field button {
+			padding: 0.45rem 1.3rem;
+			border-radius: 999px;
+			border: 1px solid rgba(56, 189, 248, 0.55);
+			background: linear-gradient(135deg, rgba(14, 116, 144, 0.7), rgba(56, 189, 248, 0.6));
+			color: var(--text-primary);
+			font-size: 0.9rem;
+			letter-spacing: 0.05em;
+			cursor: pointer;
+			transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+		}
+
+		.typehelp-field button:hover,
+		.typehelp-field button:focus-visible {
+			transform: translateY(-1px);
+			box-shadow: 0 12px 22px rgba(56, 189, 248, 0.22);
+			outline: none;
+		}
+
+		.typehelp-feedback {
+			min-height: 1.2rem;
+			font-size: 0.88rem;
+			color: var(--text-muted);
+		}
+
+		.typehelp-feedback.success {
+			color: var(--accent);
+		}
+
+		.typehelp-feedback.error {
+			color: #fca5a5;
+		}
+
+		.typehelp-body {
+			display: grid;
+			grid-template-columns: minmax(180px, 220px) 1fr;
+			gap: 1.2rem;
+		}
+
+		.typehelp-list-wrapper {
+			display: grid;
+			gap: 0.7rem;
+		}
+
+		.typehelp-list-wrapper h4 {
+			font-size: 1rem;
+		}
+
+		.typehelp-list {
+			list-style: none;
+			display: grid;
+			gap: 0.55rem;
+		}
+
+		.typehelp-item-button {
+			width: 100%;
+			text-align: left;
+			padding: 0.6rem 0.75rem;
+			border-radius: 12px;
+			border: 1px solid rgba(148, 163, 184, 0.16);
+			background: rgba(10, 17, 34, 0.6);
+			color: var(--text-primary);
+			font-size: 0.92rem;
+			cursor: pointer;
+			transition: border var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
+		}
+
+		.typehelp-item-button:hover,
+		.typehelp-item-button:focus-visible {
+			border-color: var(--accent);
+			background: rgba(56, 189, 248, 0.18);
+			transform: translateX(2px);
+			outline: none;
+		}
+
+		.typehelp-item-button.active {
+			border-color: var(--accent);
+			background: rgba(14, 116, 144, 0.35);
+			box-shadow: 0 10px 24px rgba(56, 189, 248, 0.2);
+		}
+
+		.typehelp-content {
+			display: grid;
+			gap: 0.8rem;
+			background: rgba(10, 17, 34, 0.55);
+			border: 1px solid rgba(148, 163, 184, 0.16);
+			border-radius: 16px;
+			padding: clamp(1rem, 2.8vw, 1.4rem);
+		}
+
+		.typehelp-content-title {
+			font-size: 1.1rem;
+			font-weight: 600;
+		}
+
+		.typehelp-content-body {
+			display: grid;
+			gap: 0.75rem;
+			color: var(--text-muted);
+			font-size: 0.95rem;
+			line-height: 1.8;
+		}
+
+		.typehelp-content-body p {
+			margin: 0;
+		}
+
+		.atlas-section {
+			display: grid;
+			gap: 1.6rem;
+			background: rgba(10, 17, 34, 0.58);
+			border: 1px solid rgba(148, 163, 184, 0.16);
+			border-radius: 24px;
+			padding: clamp(1.6rem, 3vw, 2.6rem);
+			box-shadow: var(--shadow-soft);
+		}
+
+		.atlas-section.locked {
+			display: none;
+		}
+
+		.atlas-header {
+			display: grid;
+			gap: 0.8rem;
+		}
+
+		.atlas-header h3 {
+			font-size: 1.4rem;
+			font-weight: 600;
+		}
+
+		.atlas-header p {
+			color: var(--text-muted);
+			line-height: 1.7;
+		}
+
+		.atlas-tabs {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			gap: 1rem;
+		}
+
+		.atlas-tabs-group {
+			display: flex;
+			gap: 0.6rem;
+		}
+
+		.atlas-tab {
+			min-width: 96px;
+			padding: 0.5rem 0.9rem;
+			border-radius: 999px;
+			border: 1px solid rgba(148, 163, 184, 0.2);
+			background: rgba(15, 23, 42, 0.65);
+			color: var(--text-primary);
+			font-size: 0.9rem;
+			letter-spacing: 0.04em;
+			cursor: pointer;
+			transition: transform var(--transition-fast), border var(--transition-fast), box-shadow var(--transition-fast);
+		}
+
+		.atlas-tab:hover,
+		.atlas-tab:focus-visible {
+			transform: translateY(-2px);
+			border-color: var(--accent);
+			box-shadow: 0 10px 18px rgba(56, 189, 248, 0.2);
+			outline: none;
+		}
+
+		.atlas-tab.active {
+			background: rgba(14, 116, 144, 0.4);
+			border-color: var(--accent);
+			box-shadow: 0 12px 26px rgba(56, 189, 248, 0.25);
+		}
+
+		.atlas-tab.completed::after {
+			content: '✓';
+			margin-left: 0.4rem;
+			font-size: 0.85rem;
+			color: var(--accent);
+		}
+
+		.atlas-book {
+			--atlas-column-width: 520px;
+			display: grid;
+			grid-template-columns: repeat(2, minmax(var(--atlas-column-width), 1fr));
+			gap: 1.6rem;
+			position: relative;
+			border-radius: 22px;
+			background: linear-gradient(90deg, rgba(248, 241, 227, 0.94) 0%, rgba(248, 241, 227, 0.94) 50%, rgba(245, 236, 220, 0.94) 50%, rgba(245, 236, 220, 0.94) 100%);
+			border: 1px solid rgba(227, 174, 190, 0.6);
+			padding: clamp(1.2rem, 3vw, 1.8rem);
+			box-shadow: 0 20px 36px rgba(10, 17, 34, 0.55);
+			width: min(calc(var(--atlas-column-width) * 2 + 3.2rem), 100%);
+			margin: clamp(0.5rem, 1vw, 1.5rem) auto;
+			min-height: 640px;
+			align-items: stretch;
+			color: #352620;
+		}
+
+		.atlas-book::before {
+			content: '';
+			position: absolute;
+			inset: -20px;
+			border-radius: 28px;
+			background: linear-gradient(135deg, rgba(196, 60, 110, 0.9), rgba(113, 32, 68, 0.92));
+			border: 2px solid rgba(255, 198, 214, 0.35);
+			z-index: -2;
+			box-shadow: 0 26px 48px rgba(10, 17, 34, 0.6);
+		}
+
+		.atlas-book::after {
+			content: '';
+			position: absolute;
+			top: -22px;
+			bottom: -22px;
+			left: 50%;
+			width: 4px;
+			transform: translateX(-50%);
+			background: linear-gradient(180deg, rgba(200, 170, 150, 0.45), rgba(200, 170, 150, 0));
+			box-shadow: inset 0 0 0 1px rgba(140, 110, 95, 0.35);
+			opacity: 0.8;
+			z-index: -1;
+		}
+
+		.atlas-left {
+			display: grid;
+			gap: 1.1rem;
+		}
+
+		.atlas-slot-area {
+			display: grid;
+			gap: 0.6rem;
+			align-content: start;
+			justify-items: start;
+			min-height: 72px;
+			letter-spacing: 0.03em;
+		}
+
+		.atlas-slot {
+			min-width: 92px;
+			min-height: 36px;
+			display: inline-grid;
+			place-items: center;
+			padding: 0.4rem 0.6rem;
+			border-radius: 12px;
+			border: 1px dashed rgba(153, 112, 87, 0.5);
+			color: #6c4f43;
+			background: rgba(255, 255, 255, 0.7);
+			transition: border var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+		}
+
+		.atlas-slot.active {
+			border-color: var(--accent-strong);
+			color: #1f3f46;
+			background: rgba(210, 242, 252, 0.92);
+		}
+
+		.atlas-slot.mismatch {
+			border-color: #fca5a5;
+			color: #f97373;
+			background: rgba(255, 230, 230, 0.9);
+		}
+
+		.atlas-slot.filled {
+			border-style: solid;
+			border-color: var(--accent);
+			color: var(--text-primary);
+			background: rgba(14, 116, 144, 0.32);
+		}
+
+		.atlas-prompt {
+			margin: 0;
+			font-size: 1rem;
+			line-height: 1.65;
+		}
+
+		.atlas-reveal-block {
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.35rem;
+			width: 100%;
+		}
+
+		.atlas-reveal {
+			margin: 0;
+			font-size: clamp(1.5rem, 2.4vw, 1.75rem);
+			font-weight: 600;
+			letter-spacing: 0.04em;
+			line-height: 1.35;
+			color: #2d1f1b;
+		}
+
+		.atlas-summary {
+			display: grid;
+			gap: 0.55rem;
+			color: #4f3d35;
+			line-height: 1.45;
+			font-size: 0.95rem;
+			margin-inline: clamp(1rem, 3vw, 3rem);
+		}
+
+		.atlas-summary p {
+			margin: 0;
+			line-height: 1.45;
+		}
+
+		.atlas-right {
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			gap: 0.8rem;
+		}
+
+		.atlas-right figure {
+			margin: 0;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: 0.6rem;
+			width: 100%;
+			flex: 1 1 auto;
+			padding: 0 clamp(0.8rem, 2vw, 1.6rem) 0 clamp(0.3rem, 1.2vw, 0.8rem);
+		}
+
+		.atlas-right img {
+			display: block;
+			width: 100%;
+			height: auto;
+			max-height: clamp(420px, 60vh, 600px);
+			margin: 0 auto;
+			border-radius: 0;
+			object-fit: contain;
+			box-shadow: none;
+		}
+
+		.atlas-right figcaption {
+			font-size: 0.85rem;
+			color: #6d574e;
+			letter-spacing: 0.04em;
+		}
+
+		.atlas-fragments {
+			display: grid;
+			gap: 0.6rem;
+		}
+
+		.atlas-fragments h4 {
+			font-size: 0.98rem;
+			font-weight: 600;
+			letter-spacing: 0.05em;
+		}
+
+		.atlas-token-pool {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.6rem;
+		}
+
+		.atlas-token {
+			padding: 0.38rem 0.75rem;
+			border-radius: 999px;
+			border: 1px solid rgba(94, 234, 212, 0.4);
+			background: rgba(14, 116, 144, 0.35);
+			color: var(--accent);
+			font-size: 0.85rem;
+			letter-spacing: 0.08em;
+			cursor: grab;
+			transition: transform var(--transition-fast), border var(--transition-fast);
+		}
+
+		.atlas-token:focus-visible,
+		.atlas-token:hover {
+			transform: translateY(-1px);
+			border-color: var(--accent-strong);
+			outline: none;
+		}
+
+		.atlas-token:active {
+			cursor: grabbing;
+		}
+
+		.fragment-panel h3 {
+			font-size: 0.95rem;
+			font-weight: 600;
+			letter-spacing: 0.05em;
+		}
+
+		.fragment-collection {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.55rem;
+			min-height: 36px;
+		}
+
+		.fragment-token {
+			padding: 0.3rem 0.75rem;
+			border-radius: 999px;
+			border: 1px solid rgba(94, 234, 212, 0.45);
+			background: rgba(14, 116, 144, 0.32);
+			color: var(--accent);
+			font-size: 0.78rem;
+			letter-spacing: 0.1em;
+			text-transform: uppercase;
+			box-shadow: 0 0 10px rgba(94, 234, 212, 0.25);
+		}
+
+		.fragment-placeholder {
+			color: var(--text-muted);
+			font-size: 0.85rem;
+		}
+
+		.level-media {
+			border-radius: 18px;
+			overflow: hidden;
+			box-shadow: 0 16px 30px rgba(15, 23, 42, 0.45);
+		}
+
+		.level-media img {
+			width: 100%;
+			display: block;
+			object-fit: cover;
+		}
+
+		.level-intro {
+			color: var(--text-muted);
+			line-height: 1.8;
+		}
+
+		.cloze-form {
+			display: grid;
+			gap: 1.2rem;
+			background: rgba(10, 17, 34, 0.58);
+			border: 1px solid rgba(148, 163, 184, 0.16);
+			border-radius: 18px;
+			padding: clamp(1.2rem, 3vw, 1.6rem);
+		}
+
+		.cloze-form p {
+			color: var(--text-muted);
+			line-height: 1.9;
+		}
+
+		.cloze-select {
+			appearance: none;
+			background: rgba(15, 23, 42, 0.75);
+			border: 1px solid rgba(94, 234, 212, 0.35);
+			border-radius: 10px;
+			color: var(--text-primary);
+			padding: 0.35rem 1.8rem 0.35rem 0.75rem;
+			margin: 0 0.25rem;
+			font-size: 0.95rem;
+			letter-spacing: 0.02em;
+			background-image: linear-gradient(135deg, rgba(94, 234, 212, 0.4), rgba(56, 189, 248, 0.35));
+		}
+
+		.cloze-select:focus-visible {
+			outline: none;
+			border-color: var(--accent-strong);
+			box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.35);
+		}
+
+		.cloze-submit {
+			justify-self: start;
+			border: 1px solid rgba(56, 189, 248, 0.55);
+			background: linear-gradient(135deg, rgba(14, 116, 144, 0.8), rgba(56, 189, 248, 0.55));
+			color: var(--text-primary);
+			padding: 0.45rem 1.4rem;
+			border-radius: 999px;
+			font-size: 0.92rem;
+			letter-spacing: 0.08em;
+			cursor: pointer;
+			transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+		}
+
+		.cloze-submit:hover,
+		.cloze-submit:focus-visible {
+			transform: translateY(-1px);
+			box-shadow: 0 12px 24px rgba(56, 189, 248, 0.25);
+			outline: none;
+		}
+
+		.cloze-feedback {
+			min-height: 1.6rem;
+			font-size: 0.9rem;
+		}
+
+		.cloze-feedback.success {
+			color: var(--accent);
+		}
+
+		.cloze-feedback.error {
+			color: #fca5a5;
+		}
+
+		.level-note {
+			border-left: 3px solid rgba(94, 234, 212, 0.35);
+			padding-left: 0.9rem;
+			color: var(--text-muted);
+			font-size: 0.9rem;
+			line-height: 1.7;
+		}
+
+		.level.locked {
+			display: none;
+		}
+
+		.level h3 {
+			font-size: 1.4rem;
+			font-weight: 600;
+		}
+
+		.level p {
+			color: var(--text-muted);
+			line-height: 1.7;
+		}
+
+		.level .placeholder {
+			border: 1px dashed rgba(148, 163, 184, 0.35);
+			padding: 1.2rem;
+			border-radius: 16px;
+			font-size: 0.9rem;
+			color: rgba(148, 163, 184, 0.75);
+		}
+
+		.toast {
+			position: fixed;
+			inset: auto auto 32px 50%;
+			transform: translateX(-50%) translateY(40px);
+			background: rgba(10, 17, 34, 0.9);
+			color: var(--text-primary);
+			padding: 0.85rem 1.5rem;
+			border-radius: 999px;
+			border: 1px solid rgba(94, 234, 212, 0.35);
+			box-shadow: var(--shadow-soft);
+			opacity: 0;
+			pointer-events: none;
+			transition: transform 280ms ease, opacity 280ms ease;
+		}
+
+		.toast.show {
+			transform: translateX(-50%) translateY(0);
+			opacity: 1;
+		}
+
+		@media (max-width: 1080px) {
+			.layout {
+				grid-template-columns: 1fr;
+			}
+
+			aside {
+				position: relative;
+				top: 0;
+				order: -1;
+			}
+
+			aside.collapsed {
+				transform: translateY(-6px);
+				opacity: 1;
+			}
+		}
+
+		@media (max-width: 640px) {
+			nav {
+				position: sticky;
+			}
+
+			.nav-links {
+				flex-wrap: wrap;
+				gap: 0.6rem;
+				justify-content: flex-end;
+			}
+
+			.layout {
+				padding: 1.2rem 1rem 3rem;
+			}
+
+			section {
+				padding: 1.4rem;
+			}
+
+			#hero h1 {
+				font-size: 2.1rem;
+			}
+
+			.card-grid {
+				grid-template-columns: 1fr;
+			}
+
+			aside {
+				border-radius: 16px;
+			}
+
+			.typehelp-body {
+				grid-template-columns: 1fr;
+			}
+
+			.typehelp-content {
+				padding: 1rem;
+			}
+
+			.atlas-tabs {
+				flex-direction: column;
+				align-items: stretch;
+			}
+
+			.atlas-tabs-group {
+				justify-content: center;
+			}
+
+			.atlas-book {
+				grid-template-columns: 1fr;
+				width: 100%;
+				min-height: auto;
+			}
+
+			.atlas-right img {
+				max-height: 260px;
+				object-fit: contain;
+				max-width: 100%;
+				margin: 0 auto;
+			}
+		}
+	</style>
+</head>
+<body>
+	<nav>
+		<div class="navbar">
+			<div class="brand">Correspondence Deduction</div>
+			<div class="nav-links" id="navLinks">
+				<a href="#RepresentedGames" data-static-link="RepresentedGames">游戏名配对</a>
+				<span class="placeholder">待解锁关卡将在此处出现</span>
+			</div>
+		</div>
+	</nav>
+	<div class="layout">
+		<aside id="taskPanel">
+			<div class="task-header">
+				<h2>进度任务</h2>
+				<!-- <button type="button" class="toggle-panel" id="togglePanel">收起</button> -->
+			</div>
+			<ul class="task-list">
+				<li class="task-item" data-task="intro"><strong>预定义规则</strong><br>完成巴别塔的翻译</li>
+				<li class="task-item" data-task="obra"><strong>对应关系推理</strong><br>完成游戏名匹配</li>
+				<li class="task-item" data-task="Chants"><strong>线索碎片化</strong><br>完成最终手册</li>
+				<li class="task-item" data-task="TypeHelp"><strong>非线性和探索性</strong><br>不按照时间顺序解锁文件</li>
+				<li class="task-item" data-task="explore"><strong>高独特性</strong><br>解锁所有文件</li>
+			</ul>
+			<div class="fragment-panel" aria-live="polite">
+				<h3>碎片收集</h3>
+				<div class="fragment-collection" id="fragmentCollection">
+					<span class="fragment-placeholder">尚未获得碎片</span>
+				</div>
+			</div>
+		</aside>
+		<main>
+			<section id="hero">
+				<h1>匹配推理：将线索拼接成真相</h1>
+				<!-- 修改说明（中文注释）：
+					实现：将简介段落显式换行并把主要关键词加粗，便于阅读与强调。
+					注意：仅修改此处段落内容，未修改其他交互逻辑或图片链接。
+				-->
+				<p>
+					<strong>匹配推理</strong>是一种以<strong>逻辑推理</strong>和<strong>对应关系</strong>建立为核心玩法的游戏类型。<br>
+					通过不断<strong>搜集</strong>、<strong>匹配</strong>、<strong>串联</strong>碎片化线索，引导玩家逐步重构事件全貌。<br>
+					玩家需要将<span class="visually-hidden"></span><strong>分散的信息</strong>（如声音、符号、文本）通过<strong>逻辑推理</strong>关联到正确的对象（人物、事件、含义）上，形成<strong>一一对应</strong>的关系。
+				</p>
+				<div class="hero-highlight">
+					<span>线索拼接</span>
+					<span>叙事探索</span>
+					<span>推理沉浸</span>
+				</div>
+			</section>
+			<section class="RepresentedGames" id="RepresentedGames">
+				<div class="RepresentedGames-header">
+					<h2>代表游戏</h2>
+					<p>将游戏名称拖动至对应卡片，逐步解锁深度关卡页面。</p>
+				</div>
+				<div class="card-grid">
+					<article class="game-card" data-game="obra">
+						<div class="card-visual" style="background-image: url('https://img.cdn1.vip/i/6907a4181f9ff_1762108440.webp');">
+						</div>
+						<div class="drop-zone" data-expected="奥伯拉顶的回归">将代表游戏名称拖至此处</div>
+					</article>
+					<article class="game-card" data-game="Chants">
+						<div class="card-visual" style="background-image: url('https://img.cdn1.vip/i/6907a7395009a_1762109241.webp');">
+						</div>
+						<div class="drop-zone" data-expected="巴别塔圣歌">将代表游戏名称拖至此处</div>
+					</article>
+					<article class="game-card" data-game="TypeHelp">
+						<div class="card-visual" style="background-image: url('https://img.cdn1.vip/i/6907a6e07e4cd_1762109152.png');">
+						</div>
+						<div class="drop-zone" data-expected="Type Help">将代表游戏名称拖至此处</div>
+					</article>
+				</div>
+				<div class="drag-pool" id="dragPool" aria-label="游戏名称拖放池">
+					<div class="draggable" draggable="true" data-title="巴别塔圣歌">巴别塔圣歌</div>
+					<div class="draggable" draggable="true" data-title="Type Help">Type Help</div>
+					<div class="draggable" draggable="true" data-title="奥伯拉顶的回归">奥伯拉顶的回归</div>
+				</div>
+			</section>
+			<section class="levels" id="levels">
+				<article class="level locked" id="level-obra" data-level="obra">
+					<h3>奥伯拉顶的回归</h3>
+					<div class="level-media">
+						<img src="https://img.cdn1.vip/i/6907bafeb91af_1762114302.png" alt="《奥伯拉顶的回归》手绘风格的黑白船体场景" loading="lazy">
+					</div>
+					<p class="level-intro">
+						回到驶入法尔茅斯港口的奥伯拉顶号，你作为受命前往调查的保险员，必须从静止的命运残影中重建真相。
+					</p>
+					<form class="cloze-form" id="obraClozeForm" aria-describedby="obraClozeFeedback">
+						<p>
+							奥伯拉顶的回归是一款
+							<select class="cloze-select" data-answer="推理" aria-label="空一">
+								<option value="">请选择...</option>
+								<option value="推理">推理</option>
+								<option value="双人">双人</option>
+								<option value="类银">类银</option>
+								<option value="moba">moba</option>
+							</select>
+							游戏，玩家扮演保险调查员，使用
+							<select class="cloze-select" data-answer="怀表" aria-label="空二">
+								<option value="">请选择...</option>
+								<option value="手表">手表</option>
+								<option value="怀表">怀表</option>
+								<option value="电子表">电子表</option>
+								<option value="excel表">excel表</option>
+							</select>
+							查看船上60名乘员的
+							<select class="cloze-select" data-answer="死亡瞬间" aria-label="空三">
+								<option value="">请选择...</option>
+								<option value="死亡瞬间">死亡瞬间</option>
+								<option value="身份证">身份证</option>
+								<option value="画像">画像</option>
+								<option value="尸体">尸体</option>
+							</select>
+							，还原真相。
+						</p>
+						<button type="button" class="cloze-submit">提交答案</button>
+						<div class="cloze-feedback" id="obraClozeFeedback"></div>
+					</form>
+					<!-- <div class="level-note">
+						<strong>提示</strong>：观察图像中船体编号、风暴阴影与角色造型，推测他们所处事件与身份线索，再回溯到文字中的关键词。
+					</div> -->
+				</article>
+				<article class="level locked" id="level-Chants" data-level="Chants">
+					<h3>巴别塔圣歌</h3>
+					<div class="carousel-shell" id="ChantsCarousel">
+						<button type="button" class="carousel-control prev" aria-label="上一张" data-direction="prev">‹</button>
+						<div class="carousel-track">
+							<figure class="carousel-slide" data-index="0">
+								<img src="https://youke1.picui.cn/s1/2025/11/03/6907c8b4489f9.jpg" alt="1" loading="lazy">
+							</figure>
+							<figure class="carousel-slide" data-index="1">
+								<img src="https://youke1.picui.cn/s1/2025/11/03/6907c8b47885a.jpg" alt="你我好.jpg" title="你我好.jpg" loading="lazy">
+							</figure>
+							<figure class="carousel-slide" data-index="2">
+								<img src="https://youke1.picui.cn/s1/2025/11/03/6907c8b49cbb3.jpg" alt="开关门.jpg" title="开关门.jpg" loading="lazy">
+							</figure>
+						</div>
+						<button type="button" class="carousel-control next" aria-label="下一张" data-direction="next">›</button>
+						<div class="carousel-indicators" aria-hidden="true">
+							<button type="button" class="active" data-slide="0"></button>
+							<button type="button" data-slide="1"></button>
+							<button type="button" data-slide="2"></button>
+						</div>
+					</div>
+					<div class="puzzle-zone" id="ChantsPuzzle" aria-describedby="ChantsPuzzleFeedback">
+						<h4>翻译问题</h4>
+						<p class="puzzle-note">通过示例和词典，翻译下列句子</p>
+						<div class="puzzle-list">
+							<div class="puzzle-item example">
+								<div class="icon-group" aria-hidden="true">
+									<span class="icon-badge"><img src="https://youke1.picui.cn/s1/2025/11/03/6907c76863ee8.png" alt="我.png" title="我.png" /></span>
+									<span class="icon-badge"><img src="https://youke1.picui.cn/s1/2025/11/03/6907c76863ee8.png" alt="我.png" title="我.png" /></span>
+								</div>
+								<label class="puzzle-note" for="ChantsExampleInput">示例答案</label>
+								<input id="ChantsExampleInput" class="puzzle-input" type="text" value="我们" disabled>
+							</div>
+							<div class="puzzle-item" data-answer="人们">
+								<div class="icon-group">
+									<span class="icon-badge"><img src="https://youke1.picui.cn/s1/2025/11/03/6907c76864d3b.png" alt="人.png" title="人.png" /></span>
+									<span class="icon-badge"><img src="https://youke1.picui.cn/s1/2025/11/03/6907c76864d3b.png" alt="人.png" title="人.png" /></span>
+								</div>
+								<input id="ChantsAnswerA" class="puzzle-input" type="text" placeholder="请输入答案" autocomplete="off">
+							</div>
+                            <div class="puzzle-item example">   
+                                <div class="icon-group" aria-hidden="true">
+                                        <span class="icon-badge"><img src="https://youke1.picui.cn/s1/2025/11/03/6907c76863ee8.png" alt="我.png" title="我.png" /></span>
+                                        <span class="icon-badge"><img src="https://youke1.picui.cn/s1/2025/11/03/6907c76847550.png" alt="不.png" title="不.png" /></span>
+                                        <span class="icon-badge"><img src="https://youke1.picui.cn/s1/2025/11/03/6907c76864ba3.png" alt="开.png" title="开.png" /></span>
+                                        <span class="icon-badge"><img src="https://youke1.picui.cn/s1/2025/11/03/6907c76866d40.png" alt="门.png" title="门.png" /></span>
+                                    </div>
+                                    <label class="puzzle-note" for="ChantsExampleInput">示例答案</label>
+                                    <input id="ChantsExampleInput" class="puzzle-input" type="text" value="我不开门" disabled>
+                            </div>
+                            <div class="puzzle-item" data-answer="人们不自由">
+								<div class="icon-group">
+									<span class="icon-badge"><img src="https://youke1.picui.cn/s1/2025/11/03/6907c76864d3b.png" alt="人.png" title="人.png" /></span>
+									<span class="icon-badge"><img src="https://youke1.picui.cn/s1/2025/11/03/6907c76864d3b.png" alt="人.png" title="人.png" /></span>
+                                    <span class="icon-badge"><img src="https://youke1.picui.cn/s1/2025/11/03/6907c76847550.png" alt="不.png" title="不.png" /></span>
+                                    <span class="icon-badge"><img src="https://youke1.picui.cn/s1/2025/11/03/6907c76d4e6c1.png" alt="自由.png" title="自由.png" /></span>
+								</div>
+								<input id="ChantsAnswerB" class="puzzle-input" type="text" placeholder="请输入答案" autocomplete="off">
+							</div>
+                        </div>
+							
+						</div>
+						<button type="button" class="puzzle-submit" id="ChantsPuzzleSubmit">提交解答</button>
+						<div class="puzzle-feedback" id="ChantsPuzzleFeedback"></div>
+				</article>
+				<article class="level locked" id="level-TypeHelp" data-level="TypeHelp">
+					<h3>Type Help</h3>
+					<div class="typehelp-terminal" id="typeHelpTerminal" aria-describedby="typeHelpFeedback">
+						<div class="typehelp-input">
+							<label for="typeHelpUnlockInput">输入正确的文本名以解锁更多自动记录。</label>
+							<div class="typehelp-field">
+								<input id="typeHelpUnlockInput" type="text" placeholder="请输入文本名..." autocomplete="off">
+								<button type="button" id="typeHelpUnlockBtn">解锁</button>
+							</div>
+							<p class="typehelp-feedback" id="typeHelpFeedback" role="status" aria-live="polite"></p>
+						</div>
+						<div class="typehelp-body">
+							<div class="typehelp-list-wrapper">
+								<h4>文本列表</h4>
+								<ul class="typehelp-list" id="typeHelpList" role="listbox" aria-label="Type Help 文本列表"></ul>
+							</div>
+							<article class="typehelp-content" id="typeHelpContent">
+								<h4 class="typehelp-content-title" id="typeHelpContentTitle"></h4>
+								<div class="typehelp-content-body" id="typeHelpContentBody"></div>
+							</article>
+						</div>
+					</div>
+				</article>
+			</section>
+			<section class="atlas-section locked" id="atlasSection" aria-labelledby="atlasTitle">
+				<div class="atlas-header">
+					<h3 id="atlasTitle">碎片手册 · 线索成册</h3>
+					<p>收集到的六枚碎片汇聚成册。拖动碎片标签填入对应空格，借由评论手记回顾匹配推理的设计逻辑。</p>
+				</div>
+				<div class="atlas-tabs" id="atlasTabs" role="tablist" aria-label="碎片手册页签导航"></div>
+				<div class="atlas-book" role="group" aria-labelledby="atlasTitle">
+					<div class="atlas-left">
+						<div class="atlas-slot-area" id="atlasSlotArea" aria-live="polite"></div>
+						<div class="atlas-summary" id="atlasSummary"></div>
+					</div>
+					<div class="atlas-right">
+						<figure>
+							<img id="atlasImage" alt="" loading="lazy">
+							<figcaption id="atlasImageCaption"></figcaption>
+						</figure>
+					</div>
+				</div>
+				<div class="atlas-fragments">
+					<h4>可用标签</h4>
+					<div class="atlas-token-pool" id="atlasTokenPool" aria-label="碎片标签拖拽池"></div>
+				</div>
+			</section>
+		</main>
+	</div>
+	<div class="toast" id="toast" role="status" aria-live="polite"></div>
+	<script>
+		const navLinks = document.getElementById('navLinks');
+		const staticNavAnchors = document.querySelectorAll('[data-static-link]');
+		const dragPool = document.getElementById('dragPool');
+		const toast = document.getElementById('toast');
+		const taskPanel = document.getElementById('taskPanel');
+		const togglePanelBtn = document.getElementById('togglePanel');
+		const cardElements = document.querySelectorAll('.game-card');
+		const dropZones = document.querySelectorAll('.drop-zone');
+		const fragmentCollection = document.getElementById('fragmentCollection');
+		const atlasSection = document.getElementById('atlasSection');
+		const atlasTabs = document.getElementById('atlasTabs');
+		const atlasSlotArea = document.getElementById('atlasSlotArea');
+		const atlasSummary = document.getElementById('atlasSummary');
+		const atlasImage = document.getElementById('atlasImage');
+		const atlasImageCaption = document.getElementById('atlasImageCaption');
+		const atlasTokenPool = document.getElementById('atlasTokenPool');
+		const atlasImageFallbackMessage = '图像暂时无法加载，请稍后刷新。';
+
+		const fragments = new Set();
+        // const fragments = new Set(['推理', '判定', '难度', '操作', '视听', '叙事']);
+
+		const levelCompletion = {
+			obra: false,
+			Chants: false,
+			TypeHelp: false
+		};
+
+		const levelRewards = {
+			obra: ['推理', '判定'],
+			Chants: ['难度', '操作'],
+			TypeHelp: ['视听', '叙事']
+		};
+
+		const levelMap = {
+			'奥伯拉顶的回归': {
+				key: 'obra',
+				levelId: 'level-obra',
+				label: 'Obra Dinn',
+				taskKey: 'obra'
+			},
+			'巴别塔圣歌': {
+				key: 'Chants',
+				levelId: 'level-Chants',
+				label: '巴别塔圣歌',
+				taskKey: 'Chants'
+			},
+			'Type Help': {
+				key: 'TypeHelp',
+				levelId: 'level-TypeHelp',
+				label: 'Type Help',
+				taskKey: 'TypeHelp'
+			}
+		};
+
+		const atlasMeta = {
+			key: 'atlas',
+			levelId: 'atlasSection',
+			label: '设计原则手册',
+			taskKey: 'explore'
+		};
+
+		const BOOK_UNLOCK_FRAGMENT_COUNT = 6;
+
+				const atlasPages = [
+			{
+				id: 'atlas-foundation',
+				title: '推理自主',
+				side: 'left',
+				prompt: [
+					{ type: 'text', value: '匹配推理的核心是' },
+					{ type: 'slot', expected: '推理' },
+					{ type: 'text', value: '，玩家在不断的' },
+					{ type: 'slot', expected: '判定' },
+					{ type: 'text', value: '中校准答案。' }
+				],
+				revealText: '推理自主性',
+				body: [
+					'自主的推理体验是匹配推理类游戏的灵魂，线索环环相扣富有逻辑，探索过程顺序自由，无强制引导。与线性过程推理游戏不同，此类游戏往往线索碎片化，玩家可以在一定程度上改变推理顺序。'
+				],
+				image: 'https://youke1.picui.cn/s1/2025/11/03/6908112bda6da.png',
+				// imageAlt: '黑白风格的甲板场景，上升的箭头暗示调查方向。',
+				imageCaption: '共同的推理起点，无限的推演可能性。'
+			},
+			{
+				id: 'atlas-difficulty',
+				title: '难度曲线',
+				side: 'left',
+				prompt: [
+					{ type: 'text', value: '渐进式的谜题实现丝滑的' },
+					{ type: 'slot', expected: '难度' },
+					{ type: 'text', value: '曲线设计，创造连续的' },
+					{ type: 'slot', expected: '推理' },
+					{ type: 'text', value: '体验。' }
+				],
+				revealText: '难度曲线 & 游戏指引',
+				body: [
+					'遵守由易到难的难度曲线，为玩家提供适应的时间，以降低玩家在“卡关”时产生的挫败感。当线索的数量与复杂度随进程提升时，玩家的心流得以维持，也更能体会到推理成果的重量。'
+					
+				],
+				image: 'https://youke1.picui.cn/s1/2025/11/03/6908112c3991a.png',
+				// imageAlt: '翻开的图册展示阶梯与符号组合的插画。',
+				imageCaption: '解题如登山，悬崖峭壁不如脚踏实地。'
+			},
+			{
+				id: 'atlas-interaction',
+				title: '操作流程',
+				side: 'left',
+				prompt: [
+					{ type: 'text', value: '不同的' },
+					{ type: 'slot', expected: '操作' },
+					{ type: 'text', value: '方式影响了' },
+					{ type: 'slot', expected: '推理' },
+					{ type: 'text', value: '的体验是否流畅' }
+				],
+				revealText: '操作和流程',
+				body: [
+					'操作与流程设计直接影响 “解谜沉浸感”，关键在于 “是否减少无效操作”，避免 “跑图 / 重复操作” 稀释核心推理体验。'
+				],
+				image: 'https://youke1.picui.cn/s1/2025/11/03/6908112b97c5b.png',
+				// imageAlt: '册页右侧出现角色伸手的插图，指向交互动作。',
+				imageCaption: '玩家不断尝试与反馈需要最便捷的工具。'
+			},
+			{
+				id: 'atlas-audio',
+				title: '视听反馈',
+				side: 'right',
+				prompt: [
+					{ type: 'text', value: '匹配推理提供了多样的' },
+					{ type: 'slot', expected: '视听' },
+					{ type: 'text', value: '线索，有时过度独特的画面风格也会影响' },
+					{ type: 'slot', expected: '推理' },
+					{ type: 'text', value: '的顺利展开。' }
+				],
+				revealText: '视听与形式',
+				body: [
+					'硬核解谜类游戏的视听 / 形式设计，需服务于 “解谜效率” 与 “氛围沉浸”，而非单纯追求华丽，极简形式反而可能强化核心体验。'
+				],
+				image: 'https://youke1.picui.cn/s1/2025/11/03/6908112b914bc.png',
+				// imageAlt: '打开的书页上描绘鸟笼和飞离的鸟的插画。',
+				imageCaption: '视觉与听觉的呈现交织为线索的风暴。'
+			},
+			{
+				id: 'atlas-narrative',
+				title: '叙事主题',
+				side: 'right',
+				prompt: [
+					{ type: 'text', value: '碎片化的线索' },
+					{ type: 'slot', expected: '叙事' },
+					{ type: 'text', value: '，让玩家通过' },
+					{ type: 'slot', expected: '推理' },
+					{ type: 'text', value: '路径还原故事。' }
+				],
+				revealText: '叙事与主题',
+				body: [
+					'叙事的好坏直接影响 “结局满意度”，关键在于 “前期设定是否匹配后期走向”，及 “主题是否通过玩法落地”，避免 “过程惊艳、结局拉胯”。'
+				],
+				image: 'https://youke1.picui.cn/s1/2025/11/03/69081132cbcbb.png',
+				// imageAlt: '色彩明亮的界面上展示多重结构图形。',
+				imageCaption: '碎片化的叙事在玩家推理下逐步拼接成完整真相。'
+			},
+			{
+				id: 'atlas-synthesis',
+				title: '判定规则',
+				side: 'right',
+				prompt: [
+					{ type: 'text', value: '验证玩家' },
+					{ type: 'slot', expected: '推理' },
+					{ type: 'text', value: '答案是否正确的最终反馈，' },
+					{ type: 'slot', expected: '判定' },
+					{ type: 'text', value: '规则的严密还是模糊，极大地决定了玩家体验' }
+				],
+				revealText: '判定规则',
+				body: [
+					'“语言误差”与“判定严苛”均容易导致“推理误判”，“无容错空间”放大该缺陷，成为负面体验的重要诱因'
+				],
+				image: 'https://youke1.picui.cn/s1/2025/11/03/6908112a93307.png',
+				// imageAlt: '色块抽象的线条图象征整合的终章界面。',
+				imageCaption: '设计规则如过独木桥,不愿有分毫多少。'
+			}
+		];
+
+		const atlasState = {
+			unlocked: false,
+			initialised: false,
+			activePageId: null,
+			completedPages: new Set(),
+			bookComplete: false,
+			currentSlots: []
+		};
+
+		const matchedState = new Set();
+
+		const taskState = {
+			intro: false,
+			obra: false,
+			Chants: false,
+			TypeHelp: false,
+			explore: false
+		};
+
+		function maybeCompleteAllMatchesTask() {
+			if (!taskState.obra && matchedState.size === dropZones.length) {
+				markTaskComplete('obra');
+			}
+		}
+
+		function markTaskComplete(key) {
+			if (taskState[key]) {
+				return;
+			}
+			const task = document.querySelector(`.task-item[data-task="${key}"]`);
+			if (task) {
+				task.classList.add('task-complete');
+			}
+			taskState[key] = true;
+		}
+
+		// 刷新碎片收集面板，保持展示与状态同步
+		function updateFragmentCollection() {
+			if (!fragmentCollection) {
+				return;
+			}
+			fragmentCollection.innerHTML = '';
+			if (fragments.size === 0) {
+				const placeholder = document.createElement('span');
+				placeholder.className = 'fragment-placeholder';
+				placeholder.textContent = '尚未获得碎片';
+				fragmentCollection.appendChild(placeholder);
+				return;
+			}
+			const fragmentNodes = document.createDocumentFragment();
+			Array.from(fragments).forEach((label) => {
+				const token = document.createElement('span');
+				token.className = 'fragment-token';
+				token.textContent = label;
+				fragmentNodes.appendChild(token);
+			});
+			fragmentCollection.appendChild(fragmentNodes);
+		}
+
+		// 处理碎片奖励发放，避免重复添加
+		function grantFragments(list) {
+			if (!Array.isArray(list) || list.length === 0) {
+				return;
+			}
+			let updated = false;
+			list.forEach((label) => {
+				if (!fragments.has(label)) {
+					fragments.add(label);
+					updated = true;
+				}
+			});
+			if (updated) {
+				updateFragmentCollection();
+				showToast(`获得碎片：${list.join('、')}`);
+			}
+			maybeUnlockAtlas();
+		}
+
+		function showToast(message) {
+			toast.textContent = message;
+			toast.classList.add('show');
+			clearTimeout(showToast.timer);
+			showToast.timer = setTimeout(() => {
+				toast.classList.remove('show');
+			}, 2400);
+		}
+
+		function renderAtlasTokens() {
+			if (!atlasTokenPool) {
+				return;
+			}
+			atlasTokenPool.innerHTML = '';
+			const fragmentArray = Array.from(fragments);
+			if (fragmentArray.length === 0) {
+				return;
+			}
+			fragmentArray.forEach((label) => {
+				const token = document.createElement('button');
+				token.type = 'button';
+				token.className = 'atlas-token';
+				token.textContent = label;
+				token.dataset.fragment = label;
+				token.setAttribute('draggable', 'true');
+				token.setAttribute('aria-label', `拖动碎片 ${label}`);
+				token.addEventListener('dragstart', handleAtlasTokenDragStart);
+				token.addEventListener('keydown', (event) => {
+					if (event.key === 'Enter' || event.key === ' ') {
+						event.preventDefault();
+						fillAtlasSlotWithLabel(label);
+					}
+				});
+				token.addEventListener('click', () => fillAtlasSlotWithLabel(label));
+				atlasTokenPool.appendChild(token);
+			});
+		}
+
+		function renderAtlasTabs() {
+			if (!atlasTabs) {
+				return;
+			}
+			atlasTabs.innerHTML = '';
+			const leftGroup = document.createElement('div');
+			leftGroup.className = 'atlas-tabs-group';
+			leftGroup.dataset.side = 'left';
+			const rightGroup = document.createElement('div');
+			rightGroup.className = 'atlas-tabs-group';
+			rightGroup.dataset.side = 'right';
+			atlasPages.forEach((page) => {
+				const button = document.createElement('button');
+				button.type = 'button';
+				button.className = 'atlas-tab';
+				button.dataset.pageId = page.id;
+				button.textContent = page.title;
+				button.setAttribute('role', 'tab');
+				button.setAttribute('aria-selected', 'false');
+				button.addEventListener('click', () => setActiveAtlasPage(page.id));
+				button.addEventListener('keydown', (event) => {
+					if (event.key === 'Enter' || event.key === ' ') {
+						event.preventDefault();
+						setActiveAtlasPage(page.id);
+					}
+				});
+				if (page.side === 'left') {
+					leftGroup.appendChild(button);
+				} else {
+					rightGroup.appendChild(button);
+				}
+			});
+			atlasTabs.appendChild(leftGroup);
+			atlasTabs.appendChild(rightGroup);
+		}
+
+		function ensureAtlasImageHandlers() {
+			if (!atlasImage || atlasImage.dataset.handlersBound === 'true') {
+				return;
+			}
+			atlasImage.dataset.handlersBound = 'true';
+			atlasImage.addEventListener('load', () => {
+				atlasImage.hidden = false;
+				atlasImage.classList.remove('atlas-image-error');
+				if (atlasImageCaption && typeof atlasImageCaption.dataset.defaultCaption !== 'undefined') {
+					atlasImageCaption.textContent = atlasImageCaption.dataset.defaultCaption;
+				}
+			});
+			atlasImage.addEventListener('error', () => {
+				atlasImage.hidden = true;
+				atlasImage.classList.add('atlas-image-error');
+				atlasImage.dataset.currentSrc = '';
+				atlasImage.alt = '图像加载失败';
+				if (atlasImageCaption) {
+					if (typeof atlasImageCaption.dataset.defaultCaption === 'undefined') {
+						atlasImageCaption.dataset.defaultCaption = atlasImageCaption.textContent || '';
+					}
+					atlasImageCaption.textContent = atlasImageFallbackMessage;
+				}
+			});
+		}
+
+		function updateAtlasImage(page) {
+			if (!atlasImage) {
+				return;
+			}
+			ensureAtlasImageHandlers();
+			const url = typeof page.image === 'string' ? page.image.trim() : '';
+			const altText = page.imageAlt || '';
+			if (!url) {
+				atlasImage.hidden = true;
+				atlasImage.removeAttribute('src');
+				atlasImage.alt = altText;
+				atlasImage.dataset.currentSrc = '';
+				return;
+			}
+			atlasImage.classList.remove('atlas-image-error');
+			const applySource = () => {
+				atlasImage.hidden = false;
+				atlasImage.src = url;
+				atlasImage.alt = altText;
+				atlasImage.dataset.currentSrc = url;
+			};
+			const scheduleSource = typeof requestAnimationFrame === 'function' ? requestAnimationFrame : (fn) => setTimeout(fn, 0);
+			if (atlasImage.dataset.currentSrc === url) {
+				atlasImage.removeAttribute('src');
+				scheduleSource(applySource);
+				return;
+			}
+			applySource();
+		}
+
+		function setActiveAtlasPage(pageId) {
+			if (!atlasTabs) {
+				return;
+			}
+			const page = atlasPages.find((entry) => entry.id === pageId);
+			if (!page) {
+				return;
+			}
+			atlasState.activePageId = pageId;
+			Array.from(atlasTabs.querySelectorAll('.atlas-tab')).forEach((button) => {
+				const isActive = button.dataset.pageId === pageId;
+				button.classList.toggle('active', isActive);
+				button.setAttribute('aria-selected', String(isActive));
+			});
+			renderAtlasPrompt(page);
+			if (atlasSummary) {
+				atlasSummary.innerHTML = '';
+				page.body.forEach((line) => {
+					const paragraph = document.createElement('p');
+					paragraph.textContent = line;
+					atlasSummary.appendChild(paragraph);
+				});
+			}
+			if (atlasImageCaption) {
+				const captionText = page.imageCaption || '';
+				atlasImageCaption.dataset.defaultCaption = captionText;
+				atlasImageCaption.textContent = captionText;
+			}
+			updateAtlasImage(page);
+		}
+
+		function renderAtlasPrompt(page) {
+			if (!atlasSlotArea) {
+				return;
+			}
+			atlasSlotArea.innerHTML = '';
+			atlasState.currentSlots = [];
+			if (atlasState.completedPages.has(page.id)) {
+				const revealWrapper = document.createElement('div');
+				revealWrapper.className = 'atlas-reveal-block';
+				const reveal = document.createElement('h4');
+				reveal.className = 'atlas-reveal';
+				reveal.textContent = page.revealText;
+				revealWrapper.appendChild(reveal);
+				atlasSlotArea.appendChild(revealWrapper);
+				return;
+			}
+			const promptContainer = document.createElement('p');
+			promptContainer.className = 'atlas-prompt';
+			promptContainer.setAttribute('role', 'text');
+			page.prompt.forEach((segment) => {
+				if (segment.type === 'text') {
+					const textNode = document.createTextNode(segment.value);
+					promptContainer.appendChild(textNode);
+					return;
+				}
+				const slot = document.createElement('button');
+				slot.type = 'button';
+				slot.className = 'atlas-slot';
+				slot.dataset.expected = segment.expected;
+				slot.dataset.filled = 'false';
+				slot.textContent = '拖入标签';
+				slot.setAttribute('aria-label', '拖入对应碎片标签以完成句子');
+				slot.addEventListener('dragover', handleAtlasSlotDragOver);
+				slot.addEventListener('dragleave', handleAtlasSlotDragLeave);
+				slot.addEventListener('drop', handleAtlasSlotDrop);
+				promptContainer.appendChild(slot);
+				atlasState.currentSlots.push(slot);
+			});
+			atlasSlotArea.appendChild(promptContainer);
+		}
+
+		function handleAtlasTokenDragStart(event) {
+			const label = event.target.dataset.fragment;
+			if (!label || !event.dataTransfer) {
+				return;
+			}
+			event.dataTransfer.setData('text/plain', label);
+			event.dataTransfer.effectAllowed = 'copyMove';
+		}
+
+		function handleAtlasSlotDragOver(event) {
+			event.preventDefault();
+			if (event.dataTransfer) {
+				event.dataTransfer.dropEffect = 'copy';
+			}
+			event.currentTarget.classList.add('active');
+		}
+
+		function handleAtlasSlotDragLeave(event) {
+			event.currentTarget.classList.remove('active');
+		}
+
+		function handleAtlasSlotDrop(event) {
+			event.preventDefault();
+			const slot = event.currentTarget;
+			slot.classList.remove('active');
+			if (slot.classList.contains('filled')) {
+				return;
+			}
+			const expected = slot.dataset.expected;
+			const value = event.dataTransfer.getData('text/plain');
+			if (!expected || value !== expected) {
+				slot.classList.add('mismatch');
+				setTimeout(() => slot.classList.remove('mismatch'), 520);
+				return;
+			}
+			commitAtlasSlotFill(slot, value);
+		}
+
+		function commitAtlasSlotFill(slot, label) {
+			slot.classList.add('filled');
+			slot.dataset.filled = 'true';
+			slot.textContent = label;
+			checkAtlasPageCompletion();
+		}
+
+		function fillAtlasSlotWithLabel(label) {
+			const page = atlasPages.find((entry) => entry.id === atlasState.activePageId);
+			if (!page || atlasState.completedPages.has(page.id)) {
+				return;
+			}
+			const targetSlot = atlasState.currentSlots.find((slot) => slot.dataset.expected === label && slot.dataset.filled !== 'true');
+			if (!targetSlot) {
+				return;
+			}
+			commitAtlasSlotFill(targetSlot, label);
+		}
+
+		function checkAtlasPageCompletion() {
+			const page = atlasPages.find((entry) => entry.id === atlasState.activePageId);
+			if (!page || atlasState.completedPages.has(page.id)) {
+				return;
+			}
+			const allFilled = atlasState.currentSlots.every((slot) => slot.dataset.filled === 'true');
+			if (!allFilled) {
+				return;
+			}
+			revealAtlasPage(page);
+		}
+
+		function revealAtlasPage(page, options = {}) {
+			if (atlasState.completedPages.has(page.id)) {
+				return;
+			}
+			atlasState.completedPages.add(page.id);
+			if (page.id === 'atlas-difficulty') {
+				markTaskComplete('intro');
+			}
+			if (atlasSlotArea) {
+				atlasSlotArea.innerHTML = '';
+				const revealWrapper = document.createElement('div');
+				revealWrapper.className = 'atlas-reveal-block';
+				const reveal = document.createElement('h4');
+				reveal.className = 'atlas-reveal';
+				reveal.textContent = page.revealText;
+				revealWrapper.appendChild(reveal);
+				atlasSlotArea.appendChild(revealWrapper);
+			}
+			if (atlasTabs) {
+				const tab = atlasTabs.querySelector(`.atlas-tab[data-page-id="${page.id}"]`);
+				if (tab) {
+					tab.classList.add('completed');
+				}
+			}
+			if (!options.skipToast) {
+				showToast(`已整理页签《${page.title}》。`);
+			}
+			if (!atlasState.bookComplete && atlasState.completedPages.size === atlasPages.length) {
+				atlasState.bookComplete = true;
+				showToast('碎片手册全部完成！你已回顾匹配推理的完整脉络。');
+				markTaskComplete('Chants');
+			}
+		}
+
+		function initAtlas() {
+			if (!atlasSection || atlasState.initialised) {
+				return;
+			}
+			atlasState.initialised = true;
+			renderAtlasTabs();
+			renderAtlasTokens();
+			if (atlasPages.length > 0) {
+				setActiveAtlasPage(atlasPages[0].id);
+			}
+		}
+
+		function maybeUnlockAtlas() {
+			if (atlasState.unlocked) {
+				return;
+			}
+			if (!atlasSection || fragments.size < BOOK_UNLOCK_FRAGMENT_COUNT) {
+				return;
+			}
+			atlasState.unlocked = true;
+			atlasSection.classList.remove('locked');
+			appendNavLink(atlasMeta);
+			showToast('碎片手册已解锁，翻阅书页完成最终整理。');
+			initAtlas();
+		}
+
+		function unlockLevel(title) {
+			const meta = levelMap[title];
+			if (!meta) {
+				return;
+			}
+			const levelSection = document.getElementById(meta.levelId);
+			if (levelSection && levelSection.classList.contains('locked')) {
+				levelSection.classList.remove('locked');
+				showToast(`${title} 关卡已解锁`);
+				appendNavLink(meta);
+			}
+		}
+
+		function appendNavLink(meta) {
+			if (navLinks.querySelector(`[data-level-link="${meta.key}"]`)) {
+				return;
+			}
+			const placeholder = navLinks.querySelector('.placeholder');
+			if (placeholder) {
+				placeholder.remove();
+			}
+			const link = document.createElement('a');
+			link.href = `#${meta.levelId}`;
+			link.dataset.levelLink = meta.key;
+			link.textContent = meta.label;
+			navLinks.appendChild(link);
+		}
+
+		function handleDragStart(event) {
+			const title = event.target.dataset.title;
+			if (!title || event.target.classList.contains('used')) {
+				return;
+			}
+			event.dataTransfer.setData('text/plain', title);
+			event.dataTransfer.effectAllowed = 'move';
+		}
+
+		function handleDragOver(event) {
+			event.preventDefault();
+			event.dataTransfer.dropEffect = 'move';
+			event.currentTarget.classList.add('active');
+		}
+
+		function handleDragLeave(event) {
+			event.currentTarget.classList.remove('active');
+		}
+
+		function handleDrop(event) {
+			event.preventDefault();
+			const dropZone = event.currentTarget;
+			const expected = dropZone.dataset.expected;
+			const received = event.dataTransfer.getData('text/plain');
+			dropZone.classList.remove('active');
+
+			if (!expected || received !== expected) {
+				dropZone.classList.add('mismatch');
+				showToast('未匹配成功，试试其他卡片');
+				setTimeout(() => dropZone.classList.remove('mismatch'), 600);
+				return;
+			}
+
+			if (matchedState.has(expected)) {
+				return;
+			}
+
+			matchedState.add(expected);
+			dropZone.classList.add('matched');
+			dropZone.textContent = expected;
+			maybeCompleteAllMatchesTask();
+
+			const dragged = dragPool.querySelector(`.draggable[data-title="${expected}"]`);
+			if (dragged) {
+				dragged.classList.add('used');
+				dragged.setAttribute('aria-disabled', 'true');
+			}
+
+			unlockLevel(expected);
+		}
+
+		function observeCards() {
+			const observer = new IntersectionObserver((entries) => {
+				entries.forEach((entry) => {
+					if (entry.isIntersecting) {
+						entry.target.classList.add('visible');
+						observer.unobserve(entry.target);
+					}
+				});
+			}, { threshold: 0.25 });
+
+			cardElements.forEach((card) => observer.observe(card));
+		}
+
+		function initTasks() {
+		}
+
+		function initPanelToggle() {
+			if (!togglePanelBtn) {
+				return;
+			}
+			togglePanelBtn.addEventListener('click', () => {
+				const collapsed = taskPanel.classList.toggle('collapsed');
+				togglePanelBtn.textContent = collapsed ? '展开' : '收起';
+			});
+		}
+
+		function initStaticNavLinks() {
+			staticNavAnchors.forEach((anchor) => {
+				anchor.addEventListener('click', () => {
+					/* 保留导航交互，无自动任务完成 */
+				});
+			});
+		}
+
+		function initAccessibility() {
+			dropZones.forEach((zone) => {
+				zone.addEventListener('keypress', (event) => {
+					if ((event.key === 'Enter' || event.key === ' ') && !zone.classList.contains('matched')) {
+						const match = Array.from(dragPool.children).find((node) => !node.classList.contains('used'));
+						if (match && zone.dataset.expected === match.dataset.title && !matchedState.has(match.dataset.title)) {
+							zone.classList.add('active');
+							setTimeout(() => {
+								zone.classList.remove('active');
+								zone.classList.add('matched');
+								zone.textContent = match.dataset.title;
+								match.classList.add('used');
+								matchedState.add(match.dataset.title);
+								maybeCompleteAllMatchesTask();
+								unlockLevel(match.dataset.title);
+							}, 90);
+						}
+					}
+				});
+				zone.setAttribute('tabindex', '0');
+			});
+		}
+
+		function bindDragEvents() {
+			dragPool.querySelectorAll('.draggable').forEach((item) => {
+				item.addEventListener('dragstart', handleDragStart);
+			});
+
+			dropZones.forEach((zone) => {
+				zone.addEventListener('dragover', handleDragOver);
+				zone.addEventListener('dragleave', handleDragLeave);
+				zone.addEventListener('drop', handleDrop);
+			});
+		}
+
+		function initObraCloze() {
+			const form = document.getElementById('obraClozeForm');
+			if (!form) {
+				return;
+			}
+			const selects = form.querySelectorAll('select[data-answer]');
+			const submitButton = form.querySelector('.cloze-submit');
+			const feedback = document.getElementById('obraClozeFeedback');
+			if (!submitButton || selects.length === 0 || !feedback) {
+				return;
+			}
+			submitButton.addEventListener('click', () => {
+				let allFilled = true;
+				let allCorrect = true;
+				selects.forEach((select) => {
+					if (!select.value) {
+						allFilled = false;
+					}
+					if (select.value !== select.dataset.answer) {
+						allCorrect = false;
+					}
+				});
+				feedback.classList.remove('success', 'error');
+				if (!allFilled) {
+					feedback.textContent = '请完成全部选择后再提交。';
+					feedback.classList.add('error');
+					return;
+				}
+				if (!allCorrect) {
+					feedback.textContent = '仍有线索不匹配，请重访图像线索再试。';
+					feedback.classList.add('error');
+					return;
+				}
+				feedback.textContent = '完美推理！你已成功复原。';
+				feedback.classList.add('success');
+				if (!levelCompletion.obra) {
+					levelCompletion.obra = true;
+					grantFragments(levelRewards.obra);
+				}
+			});
+		}
+
+		function initChantsCarousel() {
+			const carousel = document.getElementById('ChantsCarousel');
+			if (!carousel) {
+				return;
+			}
+			const track = carousel.querySelector('.carousel-track');
+			const slides = Array.from(track?.children || []);
+			if (!track || slides.length === 0) {
+				return;
+			}
+			const controls = carousel.querySelectorAll('.carousel-control');
+			const indicators = Array.from(carousel.querySelectorAll('.carousel-indicators button'));
+			let currentIndex = 0;
+
+			const update = (index) => {
+				const target = (index + slides.length) % slides.length;
+				track.style.transform = `translateX(-${target * 100}%)`;
+				indicators.forEach((dot, dotIndex) => {
+					dot.classList.toggle('active', dotIndex === target);
+				});
+				currentIndex = target;
+			};
+
+			controls.forEach((control) => {
+				control.addEventListener('click', () => {
+					const direction = control.dataset.direction === 'next' ? 1 : -1;
+					update(currentIndex + direction);
+				});
+			});
+
+			indicators.forEach((indicator) => {
+				indicator.addEventListener('click', () => {
+					const target = Number.parseInt(indicator.dataset.slide || '0', 10);
+					if (!Number.isNaN(target)) {
+						update(target);
+					}
+				});
+			});
+
+			update(0);
+		}
+
+		function initChantsPuzzle() {
+			const puzzle = document.getElementById('ChantsPuzzle');
+			if (!puzzle) {
+				return;
+			}
+			const items = Array.from(puzzle.querySelectorAll('.puzzle-item[data-answer]'));
+			const submitButton = document.getElementById('ChantsPuzzleSubmit');
+			const feedback = document.getElementById('ChantsPuzzleFeedback');
+			if (!submitButton || !feedback || items.length === 0) {
+				return;
+			}
+
+			submitButton.addEventListener('click', () => {
+				let allFilled = true;
+				let allCorrect = true;
+
+				items.forEach((item) => {
+					const input = item.querySelector('input');
+					const expected = (item.dataset.answer || '').trim();
+					const value = (input?.value || '').trim();
+					if (!value) {
+						allFilled = false;
+					}
+					if (value !== expected) {
+						allCorrect = false;
+					}
+				});
+
+				feedback.classList.remove('success', 'error');
+				if (!allFilled) {
+					feedback.textContent = '仍有答案未填写，完成所有输入后再提交。';
+					feedback.classList.add('error');
+					return;
+				}
+				if (!allCorrect) {
+					feedback.textContent = '组合线索尚未全部匹配，请重新审视图标含义。';
+					feedback.classList.add('error');
+					return;
+				}
+
+				feedback.textContent = '破译成功！你解锁了巴别塔的机关通路。';
+				feedback.classList.add('success');
+				if (!levelCompletion.Chants) {
+					levelCompletion.Chants = true;
+					grantFragments(levelRewards.Chants);
+					markTaskComplete('intro');
+				}
+			});
+		}
+
+		function initTypeHelpTerminal() {
+			const terminal = document.getElementById('typeHelpTerminal');
+			if (!terminal) {
+				return;
+			}
+			const listEl = document.getElementById('typeHelpList');
+			const contentTitleEl = document.getElementById('typeHelpContentTitle');
+			const contentBodyEl = document.getElementById('typeHelpContentBody');
+			const inputEl = document.getElementById('typeHelpUnlockInput');
+			const unlockBtn = document.getElementById('typeHelpUnlockBtn');
+			const feedbackEl = document.getElementById('typeHelpFeedback');
+			if (!listEl || !contentTitleEl || !contentBodyEl || !inputEl || !unlockBtn || !feedbackEl) {
+				return;
+			}
+
+			const typeHelpEntries = {
+				intro: {
+					title: '9.5 intro',
+					unlockCode: null,
+					content: [
+						'今天是本科生返校日，',
+						'用日期为标题记录一下游戏调研课程的经历吧！',
+						'第一次课在周二呢。'
+					]
+				},
+				first: {
+					title: '9.9 第一节课',
+					unlockCode: '9.9',
+					content: [
+						'第一次课居然就要分组pre吗，恐怖如斯。',
+						'原以为就搞搞类银这种最近很火的题材，结果没想到搞了一个完全没有预料的解谜题材。',
+						'匹配推理吗，希望能顺利吧！'
+					]
+				},
+				table_game: {
+					title: '9.16 玩桌游',
+					unlockCode: '9.16',
+					content: [
+						'居然可以在课上堂堂正正玩游戏吗？太好了！',
+						'改变游戏机制吗，感觉很有趣，希望能多玩几次。',
+						'但是我桌游玩得好烂，老是输……'
+					]
+				},
+                taifeng: {
+					title: '9.23 台风',
+					unlockCode: '9.23',
+					content: [
+						'台风来了也不放假吗……',
+						'哦哦？居然放假了，好欸！',
+					]
+				},
+                AI: {
+					title: '9.30 AI',
+					unlockCode: '9.30',
+					content: [
+						'要用AI做游戏，感觉好折磨。',
+						'豆包太笨了！写起代码bug一堆，还要自己改。',
+                        '让国庆期间完善一下吗？果然还是会拖到最后一天吧……',
+                        '不过最终ddl是周一欸。',
+                        '也许会拖到周日也说不定……'
+					]
+				},
+                guoqing: {
+					title: '10.8 国庆最后一天',
+					unlockCode: '10.8',
+					content: [
+						'高估自己了哈哈。',
+						'周日再说！',
+                        '周日不是放一天假吗？'
+					]
+				},
+                guoqing: {
+					title: '10.8 国庆最后一天',
+					unlockCode: '10.8',
+					content: [
+						'高估自己了哈哈。',
+						'周日再说！'
+					]
+				},
+                weekend: {
+                    title: '10.12 周末赶工',
+                    unlockCode: '10.12',
+                    content: [
+                        '狠狠赶工了',
+                        '还要找同学帮忙测试',
+                        '社恐害怕TT',
+                        '下一次课就不记录了吧。'
+                    ]
+                },
+                pre: {
+                    title: '10.21 课程Pre',
+                    unlockCode: '10.21',
+                    content: [
+                        '要开始做设计原则的卡牌了吗？',
+                        'Pre的时候好紧张啊。',
+                        '啊啊不对误会了，是做游戏设计原则的报告TT，卡牌什么的根本不急嘛。',
+                        '有个做互动网页展示卡牌的想法，',
+                        '不过果然还是太复杂了点，也没理由拉着同学帮忙做这种东西。',
+                        '还是老老实实做个PPT吧。'
+                    ]
+                },
+                absent: {
+                    title: '10.28 缺席',
+                    unlockCode: '10.28',
+                    content: [
+                        '这一周没去上课，',
+                        '自己状态太差了，',
+                        '还是感到很抱歉呢！',
+                        '下周就要最终展示了，',
+                        '又会是上课前一天赶工？',
+                        '希望能顺利完成吧！'
+                    ]
+                },
+                meeting: {
+                    title: '11.1 小组作业开会',
+                    unlockCode: '11.1',
+                    content: [
+                        '开做PPT，',
+                        '最终卡牌的绘制呈现太牛了！',
+                        '同学们都好厉害。',
+                        '希望最后的版本能让大家满意！'
+                    ]
+                },
+                work: {
+                    title: '11.3 最后的赶工',
+                    unlockCode: '11.3',
+                    content: [
+                        '独自熬夜尝试做网页，',
+                        '不知道有什么用。',
+                        '唉做都做了。',
+                        '应该在周六小组开会的时候说一下的。'
+                    ]
+                }
+			};
+
+			const entryOrder = ['intro', 'first', 'table_game', 'taifeng', 'AI', 'guoqing', 'weekend', 'pre', 'absent', 'meeting', 'work']; // 文本解锁顺序
+			const primaryUnlockId = 'meeting'; // 解锁此文本时发放奖励
+			const state = {
+				unlocked: new Set(['intro']),
+				active: 'intro',
+				rewardIssued: false
+			};
+
+			const clearFeedbackState = () => {
+				feedbackEl?.classList.remove('success', 'error');
+			};
+
+			const renderContent = (entryId) => {
+				const entry = typeHelpEntries[entryId];
+				if (!entry) {
+					return;
+				}
+				contentTitleEl.textContent = entry.title;
+				contentBodyEl.innerHTML = '';
+				const fragment = document.createDocumentFragment();
+				entry.content.forEach((line) => {
+					const paragraph = document.createElement('p');
+					paragraph.textContent = line;
+					fragment.appendChild(paragraph);
+				});
+				contentBodyEl.appendChild(fragment);
+				if (entryId === primaryUnlockId && !state.rewardIssued) {
+					state.rewardIssued = true;
+					if (!levelCompletion.TypeHelp) {
+						levelCompletion.TypeHelp = true;
+						grantFragments(levelRewards.TypeHelp);
+					}
+				}
+			};
+
+			const syncActiveButton = () => {
+				Array.from(listEl.querySelectorAll('.typehelp-item-button')).forEach((button) => {
+					const isActive = button.dataset.entryId === state.active;
+					button.classList.toggle('active', isActive);
+					button.setAttribute('aria-selected', String(isActive));
+				});
+			};
+
+			const selectEntry = (entryId) => {
+				if (!state.unlocked.has(entryId)) {
+					return;
+				}
+				state.active = entryId;
+				syncActiveButton();
+				renderContent(entryId);
+			};
+
+			const renderList = () => {
+				listEl.innerHTML = '';
+				const fragment = document.createDocumentFragment();
+				entryOrder.forEach((entryId) => {
+					if (!state.unlocked.has(entryId)) {
+						return;
+					}
+					const entry = typeHelpEntries[entryId];
+					const item = document.createElement('li');
+					const button = document.createElement('button');
+					button.type = 'button';
+					button.className = 'typehelp-item-button';
+					button.dataset.entryId = entryId;
+					button.textContent = entry.title;
+					button.addEventListener('click', () => {
+						clearFeedbackState();
+						feedbackEl.textContent = '';
+						selectEntry(entryId);
+					});
+					item.appendChild(button);
+					fragment.appendChild(item);
+				});
+				listEl.appendChild(fragment);
+				syncActiveButton();
+			};
+
+			const handleUnlock = () => {
+				if (!inputEl) {
+					return;
+				}
+				const value = (inputEl.value || '').trim();
+				clearFeedbackState();
+				if (!value) {
+					feedbackEl.textContent = '请输入要调取的文本名。';
+					feedbackEl.classList.add('error');
+					return;
+				}
+				const targetId = entryOrder.find((entryId) => {
+					const entry = typeHelpEntries[entryId];
+					return entry.unlockCode && entry.unlockCode === value;
+				});
+				if (!targetId) {
+					feedbackEl.textContent = '终端未找到相匹配的文本名。';
+					feedbackEl.classList.add('error');
+					return;
+				}
+				if (state.unlocked.has(targetId)) {
+					feedbackEl.textContent = '该文本已在列表中，无需重复解锁。';
+					feedbackEl.classList.add('error');
+					return;
+				}
+				const targetIndex = entryOrder.indexOf(targetId);
+				if (targetIndex > -1) {
+					const unlockedOutOfOrder = entryOrder.slice(0, targetIndex).some((entryId) => !state.unlocked.has(entryId));
+					if (unlockedOutOfOrder) {
+						markTaskComplete('TypeHelp');
+					}
+				}
+				state.unlocked.add(targetId);
+				feedbackEl.textContent = `已调取文本《${typeHelpEntries[targetId].title}》。`;
+				feedbackEl.classList.add('success');
+				inputEl.value = '';
+				renderList();
+				selectEntry(targetId);
+				if (entryOrder.every((entryId) => state.unlocked.has(entryId))) {
+					markTaskComplete('explore');
+				}
+			};
+
+			unlockBtn?.addEventListener('click', handleUnlock);
+			inputEl?.addEventListener('keydown', (event) => {
+				if (event.key === 'Enter') {
+					event.preventDefault();
+					handleUnlock();
+				}
+			});
+
+			renderList();
+			selectEntry(state.active);
+		}
+
+		document.addEventListener('DOMContentLoaded', () => {
+			initTasks();
+			observeCards();
+			initPanelToggle();
+			initStaticNavLinks();
+			initAccessibility();
+			bindDragEvents();
+			updateFragmentCollection();
+			initObraCloze();
+			initChantsCarousel();
+			initChantsPuzzle();
+			initTypeHelpTerminal();
+			maybeUnlockAtlas();
+		});
+	</script>
+</body>
+</html>
